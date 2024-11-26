@@ -8,6 +8,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import android.widget.Button
 import android.widget.EditText
+import android.content.Context
+import org.json.JSONArray
+import android.util.Log
 
 class DevRelActivity : AppCompatActivity() {
 
@@ -23,8 +26,10 @@ class DevRelActivity : AppCompatActivity() {
         val btnRemoveChecked = findViewById<Button>(R.id.btnRemoveChecked)
         val etNewTask = findViewById<EditText>(R.id.etNewTask)
 
+        loadTasks() // SharedPreferences에서 데이터 복원
+
         taskAdapter = TaskAdapter(taskList) { task ->
-            // 체크박스 변경 시 처리 (필요시 추가 로직)
+            // 체크박스 변경 시 처리
         }
 
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -33,13 +38,69 @@ class DevRelActivity : AppCompatActivity() {
         btnAddTask.setOnClickListener {
             val taskName = etNewTask.text.toString()
             if (taskName.isNotBlank()) {
-                taskAdapter.addTask(Task(taskName))
+                val newTask = Task(taskName)
+                taskAdapter.addTask(newTask)
                 etNewTask.text.clear()
+                saveTasks() // 데이터 저장
             }
         }
 
         btnRemoveChecked.setOnClickListener {
             taskAdapter.removeCheckedTasks()
+            saveTasks() // 데이터 저장
         }
+    }
+
+    private fun saveTasks() {
+        val sharedPreferences = getSharedPreferences("DevRelTasks", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+
+        val jsonArray = JSONArray()
+        taskList.forEach { task ->
+            val jsonObject = mapOf("name" to task.name, "isChecked" to task.isChecked)
+            jsonArray.put(jsonObject)
+        }
+
+        val jsonString = jsonArray.toString()
+        editor.putString("tasks", jsonString)
+        editor.apply()
+
+        // 로그 변경
+        Log.d("DevRelActivity", "Saved tasks to SharedPreferences: $jsonString")
+    }
+
+    private fun loadTasks() {
+        val sharedPreferences = getSharedPreferences("DevRelTasks", Context.MODE_PRIVATE)
+        val tasksJson = sharedPreferences.getString("tasks", null) ?: return
+
+        try {
+            val jsonArray = JSONArray(tasksJson)
+            for (i in 0 until jsonArray.length()) {
+                val jsonObject = jsonArray.getJSONObject(i)
+                val name = jsonObject.getString("name")
+                val isChecked = jsonObject.getBoolean("isChecked")
+                taskList.add(Task(name, isChecked))
+            }
+
+            Log.d("DevRelActivity", "Loaded tasks from SharedPreferences: $taskList")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // 로그 변경
+            Log.d("DevRelActivity", "Failed to load tasks: ${e.message}")
+            taskList.clear()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        saveTasks() // 앱이 백그라운드로 갈 때 상태 저장
+        // 로그 변경
+        Log.d("DevRelActivity", "Tasks saved during onPause")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        saveTasks() // 종료 시 상태 저장
+        Log.d("DevRelActivity", "Tasks saved during onDestroy")
     }
 }
