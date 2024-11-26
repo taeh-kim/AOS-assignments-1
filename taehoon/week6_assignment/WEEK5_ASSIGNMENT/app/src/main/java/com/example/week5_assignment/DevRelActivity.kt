@@ -11,6 +11,7 @@ import android.widget.EditText
 import android.content.Context
 import org.json.JSONArray
 import android.util.Log
+import org.json.JSONObject
 
 class DevRelActivity : AppCompatActivity() {
 
@@ -57,7 +58,10 @@ class DevRelActivity : AppCompatActivity() {
 
         val jsonArray = JSONArray()
         taskList.forEach { task ->
-            val jsonObject = mapOf("name" to task.name, "isChecked" to task.isChecked)
+            // Map 대신 JSONObject로 변환
+            val jsonObject = JSONObject()
+            jsonObject.put("name", task.name)
+            jsonObject.put("isChecked", task.isChecked)
             jsonArray.put(jsonObject)
         }
 
@@ -65,9 +69,9 @@ class DevRelActivity : AppCompatActivity() {
         editor.putString("tasks", jsonString)
         editor.apply()
 
-        // 로그 변경
         Log.d("DevRelActivity", "Saved tasks to SharedPreferences: $jsonString")
     }
+
 
     private fun loadTasks() {
         val sharedPreferences = getSharedPreferences("DevRelTasks", Context.MODE_PRIVATE)
@@ -76,7 +80,7 @@ class DevRelActivity : AppCompatActivity() {
         try {
             val jsonArray = JSONArray(tasksJson)
             for (i in 0 until jsonArray.length()) {
-                val jsonObject = jsonArray.getJSONObject(i)
+                val jsonObject = jsonArray.getJSONObject(i) // JSON 객체 가져오기
                 val name = jsonObject.getString("name")
                 val isChecked = jsonObject.getBoolean("isChecked")
                 taskList.add(Task(name, isChecked))
@@ -85,11 +89,11 @@ class DevRelActivity : AppCompatActivity() {
             Log.d("DevRelActivity", "Loaded tasks from SharedPreferences: $taskList")
         } catch (e: Exception) {
             e.printStackTrace()
-            // 로그 변경
             Log.d("DevRelActivity", "Failed to load tasks: ${e.message}")
             taskList.clear()
         }
     }
+
 
     override fun onPause() {
         super.onPause()
