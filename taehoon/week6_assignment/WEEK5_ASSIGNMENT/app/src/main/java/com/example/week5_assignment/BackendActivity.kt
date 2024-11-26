@@ -43,8 +43,25 @@ class BackendActivity : AppCompatActivity() {
         }
 
         btnRemoveChecked.setOnClickListener {
-            taskAdapter.removeCheckedTasks()
-            saveTasks()
+            val alertDialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            alertDialog.setTitle("삭제 확인") // 제목
+            alertDialog.setMessage("선택하신 항목을 삭제하시겠습니까?") // 메시지
+
+            // "확인" 누를 경우
+            alertDialog.setPositiveButton("확인") { dialogInterface, _ ->
+                taskAdapter.removeCheckedTasks() // 체크 삭제
+                saveTasks()
+                dialogInterface.dismiss() // 알림 창 닫기
+            }
+
+            // "취소" 누를 경우
+            alertDialog.setNegativeButton("취소") { dialogInterface, _ ->
+                dialogInterface.dismiss() // 알림 창 닫기
+            }
+
+            // 확인 창 띄우기
+            val deleteDialog = alertDialog.create()
+            deleteDialog.show()
         }
     }
 
